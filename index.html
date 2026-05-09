@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#120b08" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Serendip Chai POS</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <section id="loginScreen" class="login-screen">
+    <div class="login-card glass">
+      <div class="brand-orb">☕</div>
+      <h1>Serendip Chai POS</h1>
+      <p>Choose staff member to continue</p>
+
+      <div class="staff-list">
+        <button class="staff-card" onclick="selectStaff('nethum')">
+          <span class="avatar green">N</span>
+          <div>
+            <strong>Nethum</strong>
+            <small>Staff • PIN 1111</small>
+          </div>
+        </button>
+
+        <button class="staff-card" onclick="selectStaff('sanka')">
+          <span class="avatar purple">S</span>
+          <div>
+            <strong>Sanka</strong>
+            <small>Staff • PIN 2222</small>
+          </div>
+        </button>
+
+        <button class="staff-card" onclick="selectStaff('hasindu')">
+          <span class="avatar gold">H</span>
+          <div>
+            <strong>Hasindu</strong>
+            <small>Staff • PIN 3333</small>
+          </div>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PIN MODAL -->
+  <section id="pinModal" class="modal hidden">
+    <div class="pin-sheet glass">
+      <h2 id="pinTitle">Enter PIN</h2>
+      <p>4 digit staff PIN</p>
+
+      <input id="pinInput" type="password" maxlength="4" inputmode="numeric" placeholder="••••" />
+
+      <div class="pin-actions">
+        <button class="ghost-btn" onclick="closePin()">Cancel</button>
+        <button class="primary-btn" onclick="verifyPin()">Login</button>
+      </div>
+
+      <small id="pinError" class="error-text"></small>
+    </div>
+  </section>
+
+  <!-- MAIN APP -->
+  <main id="app" class="app hidden">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <button class="icon-btn" onclick="openDrawer()">☰</button>
+
+      <div>
+        <small id="greetingText">Good Evening</small>
+        <h1>Serendip Chai POS</h1>
+      </div>
+
+      <button class="icon-btn" onclick="showTab('more')">⚙️</button>
+    </header>
+
+    <!-- HOME TAB -->
+    <section id="homeTab" class="tab-page active">
+
+      <div class="shift-card glass">
+        <div>
+          <small>Current Staff</small>
+          <h2 id="currentStaffName">-</h2>
+          <p id="shiftStatusText">Shift not started</p>
+        </div>
+
+        <button id="shiftBtn" class="shift-btn" onclick="toggleShift()">Start Shift</button>
+      </div>
+
+      <section class="hero-card glass">
+        <div>
+          <small>Today Revenue</small>
+          <h2 id="homeTodaySales">Rs. 0</h2>
+        </div>
+
+        <div class="hero-stats">
+          <div>
+            <span id="homeOrders">0</span>
+            <small>Orders</small>
+          </div>
+          <div>
+            <span id="homeAvg">Rs. 0</span>
+            <small>Avg</small>
+          </div>
+          <div>
+            <span id="homeNet">Rs. 0</span>
+            <small>Net</small>
+          </div>
+        </div>
+      </section>
+
+      <section class="quick-grid">
+        <button class="quick-card glass" onclick="showTab('invoice')">
+          <span>🧾</span>
+          <strong>New Invoice</strong>
+          <small>Create order</small>
+        </button>
+
+        <button class="quick-card glass" onclick="showTab('orders')">
+          <span>☕</span>
+          <strong>Orders</strong>
+          <small>Track orders</small>
+        </button>
+
+        <button class="quick-card glass" onclick="showTab('revenue')">
+          <span>📈</span>
+          <strong>Revenue</strong>
+          <small>Sales report</small>
+        </button>
+
+        <button class="quick-card glass" onclick="showTab('expenses')">
+          <span>💸</span>
+          <strong>Expenses</strong>
+          <small>Cost control</small>
+        </button>
+
+        <button class="quick-card glass" onclick="openPanel('products')">
+          <span>🛍️</span>
+          <strong>Products</strong>
+          <small>Manage menu</small>
+        </button>
+
+        <button class="quick-card glass" onclick="openPanel('recipes')">
+          <span>📖</span>
+          <strong>Recipes</strong>
+          <small>Methods</small>
+        </button>
+      </section>
+
+    </section>
+
+    <!-- INVOICE TAB -->
+    <section id="invoiceTab" class="tab-page">
+
+      <div class="section-head">
+        <div>
+          <small>Invoice</small>
+          <h2>New Order</h2>
+        </div>
+        <button class="mini-btn" onclick="clearCart()">Clear</button>
+      </div>
+
+      <input id="productSearch" class="search-box" type="text" placeholder="Search product..." oninput="renderProducts()" />
+
+      <div class="chips">
+        <button class="chip active" onclick="setCategory('all', this)">All</button>
+        <button class="chip" onclick="setCategory('tea', this)">Tea</button>
+        <button class="chip" onclick="setCategory('coffee', this)">Coffee</button>
+        <button class="chip" onclick="setCategory('food', this)">Food</button>
+        <button class="chip" onclick="setCategory('snacks', this)">Snacks</button>
+      </div>
+
+      <div id="productGrid" class="product-grid"></div>
+
+      <div class="cart-card glass">
+        <div class="cart-head">
+          <h3>Current Invoice</h3>
+          <small id="cartCount">0 items</small>
+        </div>
+
+        <div id="cartList" class="cart-list">
+          <p class="empty-text">No items added yet</p>
+        </div>
+
+        <div class="total-row">
+          <span>Total</span>
+          <strong id="cartTotal">Rs. 0</strong>
+        </div>
+
+        <button class="primary-btn full" onclick="completeOrder()">Complete Order</button>
+      </div>
+
+    </section>
+
+    <!-- ORDERS TAB -->
+    <section id="ordersTab" class="tab-page">
+
+      <div class="section-head">
+        <div>
+          <small>Orders</small>
+          <h2>Today Orders</h2>
+        </div>
+        <button class="mini-btn" onclick="clearCompletedOrders()">Clean</button>
+      </div>
+
+      <input id="orderSearch" class="search-box" type="text" placeholder="Search orders..." oninput="renderOrders()" />
+
+      <div class="chips">
+        <button class="chip active" onclick="setOrderFilter('all', this)">All</button>
+        <button class="chip" onclick="setOrderFilter('active', this)">Active</button>
+        <button class="chip" onclick="setOrderFilter('ready', this)">Ready</button>
+        <button class="chip" onclick="setOrderFilter('completed', this)">Completed</button>
+      </div>
+
+      <div id="ordersList" class="orders-list"></div>
+
+    </section>
+
+    <!-- REVENUE TAB -->
+    <section id="revenueTab" class="tab-page">
+
+      <div class="section-head">
+        <div>
+          <small>Revenue</small>
+          <h2>Sales Dashboard</h2>
+        </div>
+        <button class="mini-btn" onclick="exportCSV()">Export</button>
+      </div>
+
+      <div class="money-hero glass">
+        <small>Total Revenue</small>
+        <h2 id="revenueTotal">Rs. 0</h2>
+        <p id="revenueSub">0 completed orders</p>
+      </div>
+
+      <div class="mini-grid">
+        <div class="mini-stat glass">
+          <small>Today</small>
+          <strong id="revToday">Rs. 0</strong>
+        </div>
+        <div class="mini-stat glass">
+          <small>This Month</small>
+          <strong id="revMonth">Rs. 0</strong>
+        </div>
+        <div class="mini-stat glass">
+          <small>Avg Order</small>
+          <strong id="revAvg">Rs. 0</strong>
+        </div>
+        <div class="mini-stat glass">
+          <small>Net Profit</small>
+          <strong id="revNet">Rs. 0</strong>
+        </div>
+      </div>
+
+      <div class="glass list-card">
+        <h3>Top Selling Items</h3>
+        <div id="topItemsList"></div>
+      </div>
+
+      <div class="glass list-card">
+        <h3>Recent Sales</h3>
+        <div id="recentSalesList"></div>
+      </div>
+
+    </section>
+
+    <!-- EXPENSES TAB -->
+    <section id="expensesTab" class="tab-page">
+
+      <div class="section-head">
+        <div>
+          <small>Expenses</small>
+          <h2>Cost Control</h2>
+        </div>
+        <button class="mini-btn" onclick="openExpenseForm()">+ Add</button>
+      </div>
+
+      <div class="money-hero expense-hero glass">
+        <small>Total Expenses</small>
+        <h2 id="expenseTotal">Rs. 0</h2>
+        <p id="expenseSub">Track daily and monthly costs</p>
+      </div>
+
+      <div class="expense-form glass hidden" id="expenseForm">
+        <input id="expenseName" type="text" placeholder="Expense name" />
+        <input id="expenseAmount" type="number" placeholder="Amount" />
+
+        <select id="expenseCategory">
+          <option value="Ingredients">Ingredients</option>
+          <option value="Rent">Rent</option>
+          <option value="Salary">Salary</option>
+          <option value="Utilities">Utilities</option>
+          <option value="Transport">Transport</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <button class="primary-btn full" onclick="saveExpense()">Save Expense</button>
+      </div>
+
+      <div class="glass list-card">
+        <h3>Recent Expenses</h3>
+        <div id="expenseList"></div>
+      </div>
+
+    </section>
+
+    <!-- MORE TAB -->
+    <section id="moreTab" class="tab-page">
+
+      <div class="section-head">
+        <div>
+          <small>Menu</small>
+          <h2>Management</h2>
+        </div>
+      </div>
+
+      <div class="menu-group glass">
+        <h3>Manage Items</h3>
+
+        <button onclick="openPanel('products')">🛍️ Products <span>›</span></button>
+        <button onclick="showTab('expenses')">💸 Expenses <span>›</span></button>
+        <button onclick="openPanel('recipes')">📖 Recipes <span>›</span></button>
+        <button onclick="openPanel('attendance')">📋 Attendance <span>›</span></button>
+      </div>
+
+      <div class="menu-group glass">
+        <h3>Manage Categories</h3>
+
+        <button onclick="openPanel('productCategories')">🏷️ Product Categories <span>›</span></button>
+        <button onclick="openPanel('expenseCategories')">📂 Expense Categories <span>›</span></button>
+        <button onclick="openPanel('recipeCategories')">📋 Recipe Categories <span>›</span></button>
+      </div>
+
+      <div class="menu-group glass">
+        <h3>System</h3>
+
+        <button onclick="openPanel('sheets')">📊 Google Sheets Sync <span>›</span></button>
+        <button onclick="logout()">🚪 Logout <span>›</span></button>
+        <button class="danger-link" onclick="factoryReset()">🗑️ Reset All Data <span>›</span></button>
+      </div>
+
+    </section>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav glass">
+      <button class="nav-item active" onclick="showTab('home', this)">🏠<small>Home</small></button>
+      <button class="nav-item" onclick="showTab('invoice', this)">🧾<small>Invoice</small></button>
+      <button class="nav-item" onclick="showTab('orders', this)">☕<small>Orders</small></button>
+      <button class="nav-item" onclick="showTab('revenue', this)">📈<small>Revenue</small></button>
+      <button class="nav-item" onclick="showTab('expenses', this)">💸<small>Expenses</small></button>
+      <button class="nav-item" onclick="showTab('more', this)">⋯<small>More</small></button>
+    </nav>
+
+  </main>
+
+  <!-- DRAWER -->
+  <aside id="drawer" class="drawer hidden">
+    <div class="drawer-overlay" onclick="closeDrawer()"></div>
+
+    <div class="drawer-panel glass">
+      <div class="drawer-brand">
+        <span>☕</span>
+        <div>
+          <h2>Serendip Chai</h2>
+          <p id="drawerStaff">Staff</p>
+        </div>
+      </div>
+
+      <button onclick="showTab('home'); closeDrawer()">🏠 Home</button>
+      <button onclick="showTab('invoice'); closeDrawer()">🧾 Invoice</button>
+      <button onclick="showTab('orders'); closeDrawer()">☕ Orders</button>
+      <button onclick="showTab('revenue'); closeDrawer()">📈 Revenue</button>
+      <button onclick="showTab('expenses'); closeDrawer()">💸 Expenses</button>
+      <button onclick="showTab('more'); closeDrawer()">⚙️ More</button>
+
+      <button class="danger-link" onclick="logout()">Logout</button>
+    </div>
+  </aside>
+
+  <!-- MANAGEMENT PANEL -->
+  <section id="panelModal" class="panel-modal hidden">
+    <div class="panel-box glass">
+      <div class="panel-head">
+        <h2 id="panelTitle">Panel</h2>
+        <button class="icon-btn" onclick="closePanel()">✕</button>
+      </div>
+
+      <div id="panelContent"></div>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
