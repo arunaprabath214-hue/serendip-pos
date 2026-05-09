@@ -4,6 +4,8 @@ const STAFF = {
   hasindu: { id: "hasindu", name: "Hasindu", role: "Staff", pin: "3333" }
 };
 
+const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyNfWP4BkJ5whvGKmpS_OLvY8ukqhdPw5S1FWhn1nTUlSZorFJTloaKGH5-FzpiQEXS/exec";
+
 const DEFAULT_PRODUCTS = [
   { id: cryptoId(), name: "Chai Tea", price: 140, category: "tea", icon: "🍵" },
   { id: cryptoId(), name: "Cinnamon Tea", price: 100, category: "tea", icon: "🌿" },
@@ -41,7 +43,7 @@ let attendance = load("serendip_attendance", []);
 let productCategories = load("serendip_product_categories", ["tea", "coffee", "food", "snacks"]);
 let expenseCategories = load("serendip_expense_categories", ["Ingredients", "Rent", "Salary", "Utilities", "Transport", "Other"]);
 let recipeCategories = load("serendip_recipe_categories", ["Tea", "Coffee", "Food", "Snacks"]);
-let sheetsUrl = load("serendip_sheets_url", "");
+let sheetsUrl = load("serendip_sheets_url", GOOGLE_SHEETS_URL);
 
 function cryptoId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -58,6 +60,29 @@ function load(key, fallback) {
 
 function save(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function syncToGoogleSheets(action, data) {
+  const url = sheetsUrl || GOOGLE_SHEETS_URL;
+
+  if (!url) return;
+
+  const payload = {
+    action: action,
+    data: data,
+    sentAt: new Date().toISOString()
+  };
+
+  fetch(url, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: "payload=" + encodeURIComponent(JSON.stringify(payload))
+  }).catch(function(error) {
+    console.log("Google Sheets sync failed:", error);
+  });
 }
 
 function byId(id) {
@@ -155,15 +180,18 @@ function toggleShift() {
 
     setShift(newShift);
 
-    attendance.unshift({
+    const startRecord = {
       id: cryptoId(),
       staffName: staff.name,
       action: "Shift Started",
       date: todayString(),
       time: timeString()
-    });
+    };
 
+    attendance.unshift(startRecord);
     save("serendip_attendance", attendance);
+    syncToGoogleSheets("attendance", startRecord);
+
   } else {
     shift.active = false;
     shift.end = new Date().toISOString();
@@ -171,15 +199,17 @@ function toggleShift() {
 
     setShift(shift);
 
-    attendance.unshift({
+    const endRecord = {
       id: cryptoId(),
       staffName: staff.name,
       action: "Shift Ended",
       date: todayString(),
       time: timeString()
-    });
+    };
 
+    attendance.unshift(endRecord);
     save("serendip_attendance", attendance);
+    syncToGoogleSheets("attendance", endRecord);
   }
 
   renderHome();
@@ -424,6 +454,7 @@ function completeOrder() {
 
   orders.unshift(order);
   save("serendip_orders", orders);
+  syncToGoogleSheets("sale", order);
 
   cart = [];
   renderCart();
@@ -503,6 +534,10 @@ function changeOrderStatus(uid, status) {
 
   order.status = status;
   save("serendip_orders", orders);
+
+  if (status === "completed") {
+    syncToGoogleSheets("sale", order);
+  }
 
   renderOrders();
   renderRevenue();
@@ -621,16 +656,18 @@ function saveExpense() {
     return;
   }
 
-  expenses.unshift({
+  const expenseRecord = {
     id: cryptoId(),
     name,
     amount,
     category,
     date: todayString(),
     time: timeString()
-  });
+  };
 
+  expenses.unshift(expenseRecord);
   save("serendip_expenses", expenses);
+  syncToGoogleSheets("expense", expenseRecord);
 
   byId("expenseName").value = "";
   byId("expenseAmount").value = "";
@@ -774,8 +811,17 @@ function addProductFromPanel() {
     return;
   }
 
-  products.push({ id: cryptoId(), name, price, icon, category });
+  const productRecord = {
+    id: cryptoId(),
+    name,
+    price,
+    icon,
+    category
+  };
+
+  products.push(productRecord);
   save("serendip_products", products);
+  syncToGoogleSheets("product", productRecord);
 
   openPanel("products");
   renderProducts();
@@ -953,10 +999,10 @@ function deleteCategory(type, category) {
 function sheetsPanel() {
   return `
     <div class="panel-form">
-      <input id="sheetsUrlInput" placeholder="Apps Script URL" value="${sheetsUrl || ""}" />
+      <input id="sheetsUrlInput" placeholder="Apps Script URL" value="${sheetsUrl || GOOGLE_SHEETS_URL}" />
       <button class="primary-btn full" onclick="saveSheetsUrl()">Save URL</button>
     </div>
-    <p class="empty-text">Google Sheets sync placeholder is ready. App works without sync for testing.</p>
+    <p class="empty-text">Google Sheets sync is connected. App still works offline using localStorage.</p>
   `;
 }
 
