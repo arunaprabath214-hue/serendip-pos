@@ -60,6 +60,10 @@ function save(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function byId(id) {
+  return document.getElementById(id);
+}
+
 function money(value) {
   return "Rs. " + Number(value || 0).toLocaleString();
 }
@@ -70,6 +74,11 @@ function todayString() {
 
 function timeString() {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function safeSet(id, value) {
+  const el = byId(id);
+  if (el) el.innerText = value;
 }
 
 function getCurrentStaff() {
@@ -92,30 +101,30 @@ function setShift(shift) {
 
 function selectStaff(id) {
   selectedStaffId = id;
-  document.getElementById("pinTitle").innerText = `Enter PIN for ${STAFF[id].name}`;
-  document.getElementById("pinInput").value = "";
-  document.getElementById("pinError").innerText = "";
-  document.getElementById("pinModal").classList.remove("hidden");
-  setTimeout(() => document.getElementById("pinInput").focus(), 100);
+  safeSet("pinTitle", `Enter PIN for ${STAFF[id].name}`);
+  byId("pinInput").value = "";
+  safeSet("pinError", "");
+  byId("pinModal").classList.remove("hidden");
+  setTimeout(() => byId("pinInput").focus(), 100);
 }
 
 function closePin() {
-  document.getElementById("pinModal").classList.add("hidden");
+  byId("pinModal").classList.add("hidden");
 }
 
 function verifyPin() {
-  const pin = document.getElementById("pinInput").value.trim();
+  const pin = byId("pinInput").value.trim();
   const staff = STAFF[selectedStaffId];
 
   if (!staff || pin !== staff.pin) {
-    document.getElementById("pinError").innerText = "Wrong PIN. Try again.";
+    safeSet("pinError", "Wrong PIN. Try again.");
     return;
   }
 
   setCurrentStaff(staff);
-  document.getElementById("pinModal").classList.add("hidden");
-  document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
+  byId("pinModal").classList.add("hidden");
+  byId("loginScreen").classList.add("hidden");
+  byId("app").classList.remove("hidden");
 
   renderAll();
 }
@@ -179,16 +188,12 @@ function toggleShift() {
 /* TABS */
 
 function showTab(tabName, navBtn = null) {
-  document.querySelectorAll(".tab-page").forEach(page => {
-    page.classList.remove("active");
-  });
+  document.querySelectorAll(".tab-page").forEach(page => page.classList.remove("active"));
 
-  const page = document.getElementById(tabName + "Tab");
+  const page = byId(tabName + "Tab");
   if (page) page.classList.add("active");
 
-  document.querySelectorAll(".nav-item").forEach(btn => {
-    btn.classList.remove("active");
-  });
+  document.querySelectorAll(".nav-item").forEach(btn => btn.classList.remove("active"));
 
   if (navBtn) {
     navBtn.classList.add("active");
@@ -204,6 +209,7 @@ function showTab(tabName, navBtn = null) {
   if (tabName === "revenue") renderRevenue();
   if (tabName === "expenses") renderExpenses();
   if (tabName === "home") renderHome();
+  if (tabName === "more") renderBadges();
 
   closeDrawer();
 }
@@ -231,25 +237,28 @@ function renderHome() {
   const shift = getShift();
 
   const hour = new Date().getHours();
-  let greeting = "Good Evening";
-  if (hour < 12) greeting = "Good Morning";
-  else if (hour < 17) greeting = "Good Afternoon";
+  let greeting = "Good Evening 👋";
+  if (hour < 12) greeting = "Good Morning 👋";
+  else if (hour < 17) greeting = "Good Afternoon 👋";
 
-  document.getElementById("greetingText").innerText = greeting;
+  safeSet("greetingText", greeting);
+  safeSet("todayDateText", todayString());
 
   if (staff) {
-    document.getElementById("currentStaffName").innerText = staff.name;
-    document.getElementById("drawerStaff").innerText = `${staff.name} • ${staff.role}`;
+    safeSet("currentStaffName", `${staff.name} on shift`);
+    safeSet("headerStaffText", `${staff.name} • ${staff.role}`);
+    safeSet("drawerStaff", `${staff.name} • ${staff.role}`);
+    safeSet("menuStaffText", `${staff.name} • ${staff.role}`);
   }
 
-  const shiftBtn = document.getElementById("shiftBtn");
+  const shiftBtn = byId("shiftBtn");
 
   if (shift && shift.active) {
-    document.getElementById("shiftStatusText").innerText = `Active since ${shift.startDisplay}`;
+    safeSet("shiftStatusText", `Since ${shift.startDisplay}`);
     shiftBtn.innerText = "End Shift";
     shiftBtn.classList.remove("ended");
   } else {
-    document.getElementById("shiftStatusText").innerText = "Shift not started";
+    safeSet("shiftStatusText", "Shift not started");
     shiftBtn.innerText = "Start Shift";
     shiftBtn.classList.add("ended");
   }
@@ -259,10 +268,13 @@ function renderHome() {
   const totalExpense = getTotalExpenses();
   const avg = todayOrders.length ? Math.round(todaySales / todayOrders.length) : 0;
 
-  document.getElementById("homeTodaySales").innerText = money(todaySales);
-  document.getElementById("homeOrders").innerText = todayOrders.length;
-  document.getElementById("homeAvg").innerText = money(avg);
-  document.getElementById("homeNet").innerText = money(todaySales - totalExpense);
+  safeSet("homeTodaySales", money(todaySales));
+  safeSet("homeSalesSub", `${todayOrders.length} Orders`);
+  safeSet("homeOrders", todayOrders.length);
+  safeSet("homeAvg", money(avg));
+  safeSet("homeNet", money(todaySales - totalExpense));
+
+  renderBadges();
 }
 
 /* PRODUCTS / INVOICE */
@@ -277,8 +289,8 @@ function setCategory(category, btn) {
 }
 
 function renderProducts() {
-  const grid = document.getElementById("productGrid");
-  const search = document.getElementById("productSearch")?.value.toLowerCase() || "";
+  const grid = byId("productGrid");
+  const search = byId("productSearch")?.value.toLowerCase() || "";
 
   let list = [...products];
 
@@ -302,7 +314,7 @@ function renderProducts() {
         <h3>${product.name}</h3>
         <p>${money(product.price)}</p>
       </div>
-      <button class="plus-btn" onclick="addToCart('${product.id}')">+ Add</button>
+      <button class="plus-btn" onclick="addToCart('${product.id}')">+</button>
     </div>
   `).join("");
 }
@@ -347,11 +359,6 @@ function decreaseQty(productId) {
   renderCart();
 }
 
-function removeCartItem(productId) {
-  cart = cart.filter(item => item.id !== productId);
-  renderCart();
-}
-
 function clearCart() {
   cart = [];
   renderCart();
@@ -362,11 +369,12 @@ function getCartTotal() {
 }
 
 function renderCart() {
-  const list = document.getElementById("cartList");
+  const list = byId("cartList");
   const total = getCartTotal();
+  const count = cart.reduce((s, i) => s + i.qty, 0);
 
-  document.getElementById("cartCount").innerText = `${cart.reduce((s, i) => s + i.qty, 0)} items`;
-  document.getElementById("cartTotal").innerText = money(total);
+  safeSet("cartCount", `${count} items`);
+  safeSet("cartTotal", money(total));
 
   if (!cart.length) {
     list.innerHTML = `<p class="empty-text">No items added yet</p>`;
@@ -439,8 +447,8 @@ function setOrderFilter(filter, btn) {
 }
 
 function renderOrders() {
-  const list = document.getElementById("ordersList");
-  const search = document.getElementById("orderSearch")?.value.toLowerCase() || "";
+  const list = byId("ordersList");
+  const search = byId("orderSearch")?.value.toLowerCase() || "";
 
   let orderList = [...orders];
 
@@ -456,7 +464,7 @@ function renderOrders() {
   }
 
   if (!orderList.length) {
-    list.innerHTML = `<p class="empty-text">No orders found</p>`;
+    list.innerHTML = `<p class="empty-text">🎉 No orders found</p>`;
     return;
   }
 
@@ -466,7 +474,7 @@ function renderOrders() {
         <div>
           <span class="order-id">${order.id}</span>
           <strong>${money(order.total)}</strong>
-          <small>${order.time} • ${order.staffName}</small>
+          <small>${order.time} • ${order.staffName} • ${order.items.length} items</small>
         </div>
         <span class="status ${order.status}">${order.status}</span>
       </div>
@@ -512,17 +520,6 @@ function deleteOrder(uid) {
   renderHome();
 }
 
-function clearCompletedOrders() {
-  if (!confirm("Remove completed orders from orders list? Revenue history will also be affected.")) return;
-
-  orders = orders.filter(order => order.status !== "completed");
-  save("serendip_orders", orders);
-
-  renderOrders();
-  renderRevenue();
-  renderHome();
-}
-
 /* REVENUE */
 
 function renderRevenue() {
@@ -534,19 +531,19 @@ function renderRevenue() {
   const avg = completed.length ? Math.round(revenue / completed.length) : 0;
   const expensesTotal = getTotalExpenses();
 
-  document.getElementById("revenueTotal").innerText = money(revenue);
-  document.getElementById("revenueSub").innerText = `${completed.length} completed orders`;
-  document.getElementById("revToday").innerText = money(getTotalRevenue(todayOrders));
-  document.getElementById("revMonth").innerText = money(getTotalRevenue(monthOrders));
-  document.getElementById("revAvg").innerText = money(avg);
-  document.getElementById("revNet").innerText = money(revenue - expensesTotal);
+  safeSet("revenueTotal", money(revenue));
+  safeSet("revenueSub", `${completed.length} completed orders`);
+  safeSet("revToday", money(getTotalRevenue(todayOrders)));
+  safeSet("revMonth", money(getTotalRevenue(monthOrders)));
+  safeSet("revAvg", money(avg));
+  safeSet("revNet", money(revenue - expensesTotal));
 
   renderTopItems();
   renderRecentSales();
 }
 
 function renderTopItems() {
-  const box = document.getElementById("topItemsList");
+  const box = byId("topItemsList");
   const count = {};
 
   getCompletedOrders().forEach(order => {
@@ -555,9 +552,7 @@ function renderTopItems() {
     });
   });
 
-  const top = Object.entries(count)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const top = Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   if (!top.length) {
     box.innerHTML = `<p class="empty-text">No sales yet</p>`;
@@ -573,7 +568,7 @@ function renderTopItems() {
 }
 
 function renderRecentSales() {
-  const box = document.getElementById("recentSalesList");
+  const box = byId("recentSalesList");
   const recent = getCompletedOrders().slice(0, 6);
 
   if (!recent.length) {
@@ -613,13 +608,13 @@ function exportCSV() {
 /* EXPENSES */
 
 function openExpenseForm() {
-  document.getElementById("expenseForm").classList.toggle("hidden");
+  byId("expenseForm").classList.toggle("hidden");
 }
 
 function saveExpense() {
-  const name = document.getElementById("expenseName").value.trim();
-  const amount = Number(document.getElementById("expenseAmount").value);
-  const category = document.getElementById("expenseCategory").value;
+  const name = byId("expenseName").value.trim();
+  const amount = Number(byId("expenseAmount").value);
+  const category = byId("expenseCategory").value;
 
   if (!name || !amount) {
     alert("Please enter expense name and amount");
@@ -637,9 +632,9 @@ function saveExpense() {
 
   save("serendip_expenses", expenses);
 
-  document.getElementById("expenseName").value = "";
-  document.getElementById("expenseAmount").value = "";
-  document.getElementById("expenseForm").classList.add("hidden");
+  byId("expenseName").value = "";
+  byId("expenseAmount").value = "";
+  byId("expenseForm").classList.add("hidden");
 
   renderExpenses();
   renderRevenue();
@@ -648,11 +643,14 @@ function saveExpense() {
 
 function renderExpenses() {
   const total = getTotalExpenses();
+  const revenue = getTotalRevenue();
 
-  document.getElementById("expenseTotal").innerText = money(total);
-  document.getElementById("expenseSub").innerText = `${expenses.length} expense records`;
+  safeSet("expenseTotal", money(total));
+  safeSet("expenseSub", `${expenses.length} expense records`);
+  safeSet("expenseMiniTotal", money(total));
+  safeSet("expenseNetProfit", money(revenue - total));
 
-  const box = document.getElementById("expenseList");
+  const box = byId("expenseList");
 
   if (!expenses.length) {
     box.innerHTML = `<p class="empty-text">No expenses yet</p>`;
@@ -684,19 +682,20 @@ function deleteExpense(id) {
 /* DRAWER */
 
 function openDrawer() {
-  document.getElementById("drawer").classList.remove("hidden");
+  byId("drawer").classList.remove("hidden");
 }
 
 function closeDrawer() {
-  document.getElementById("drawer").classList.add("hidden");
+  const drawer = byId("drawer");
+  if (drawer) drawer.classList.add("hidden");
 }
 
 /* MANAGEMENT PANELS */
 
 function openPanel(type) {
-  const modal = document.getElementById("panelModal");
-  const title = document.getElementById("panelTitle");
-  const content = document.getElementById("panelContent");
+  const modal = byId("panelModal");
+  const title = byId("panelTitle");
+  const content = byId("panelContent");
 
   modal.classList.remove("hidden");
 
@@ -737,7 +736,7 @@ function openPanel(type) {
 }
 
 function closePanel() {
-  document.getElementById("panelModal").classList.add("hidden");
+  byId("panelModal").classList.add("hidden");
 }
 
 function productsPanel() {
@@ -765,27 +764,22 @@ function productsPanel() {
 }
 
 function addProductFromPanel() {
-  const name = document.getElementById("newProductName").value.trim();
-  const price = Number(document.getElementById("newProductPrice").value);
-  const icon = document.getElementById("newProductIcon").value.trim() || "☕";
-  const category = document.getElementById("newProductCategory").value;
+  const name = byId("newProductName").value.trim();
+  const price = Number(byId("newProductPrice").value);
+  const icon = byId("newProductIcon").value.trim() || "☕";
+  const category = byId("newProductCategory").value;
 
   if (!name || !price) {
     alert("Please enter name and price");
     return;
   }
 
-  products.push({
-    id: cryptoId(),
-    name,
-    price,
-    icon,
-    category
-  });
-
+  products.push({ id: cryptoId(), name, price, icon, category });
   save("serendip_products", products);
+
   openPanel("products");
   renderProducts();
+  renderBadges();
 }
 
 function deleteProduct(id) {
@@ -796,6 +790,7 @@ function deleteProduct(id) {
 
   openPanel("products");
   renderProducts();
+  renderBadges();
 }
 
 function recipesPanel() {
@@ -814,8 +809,8 @@ function recipesPanel() {
       <div class="simple-row">
         <strong>${recipe.name}</strong>
         <small>${recipe.category}</small>
-        <p>${recipe.ingredients}</p>
-        <small>${recipe.steps}</small>
+        <p>${recipe.ingredients || ""}</p>
+        <small>${recipe.steps || ""}</small>
         <div class="row-actions">
           <button class="delete" onclick="deleteRecipe('${recipe.id}')">Delete</button>
         </div>
@@ -825,38 +820,33 @@ function recipesPanel() {
 }
 
 function addRecipe() {
-  const name = document.getElementById("recipeName").value.trim();
-  const category = document.getElementById("recipeCategory").value;
-  const ingredients = document.getElementById("recipeIngredients").value.trim();
-  const steps = document.getElementById("recipeSteps").value.trim();
+  const name = byId("recipeName").value.trim();
+  const category = byId("recipeCategory").value;
+  const ingredients = byId("recipeIngredients").value.trim();
+  const steps = byId("recipeSteps").value.trim();
 
   if (!name) {
     alert("Recipe name required");
     return;
   }
 
-  recipes.unshift({
-    id: cryptoId(),
-    name,
-    category,
-    ingredients,
-    steps
-  });
-
+  recipes.unshift({ id: cryptoId(), name, category, ingredients, steps });
   save("serendip_recipes", recipes);
+
   openPanel("recipes");
+  renderBadges();
 }
 
 function deleteRecipe(id) {
   recipes = recipes.filter(recipe => recipe.id !== id);
   save("serendip_recipes", recipes);
+
   openPanel("recipes");
+  renderBadges();
 }
 
 function attendancePanel() {
-  if (!attendance.length) {
-    return `<p class="empty-text">No attendance records yet</p>`;
-  }
+  if (!attendance.length) return `<p class="empty-text">No attendance records yet</p>`;
 
   return attendance.map(record => `
     <div class="simple-row">
@@ -867,39 +857,31 @@ function attendancePanel() {
 }
 
 function categoryPanel(type) {
-  const map = {
+  const config = {
     product: {
       list: productCategories,
-      key: "serendip_product_categories",
       input: "newProductCategoryName",
-      addFn: "addCategory('product')",
-      deleteFn: "deleteCategory"
+      addFn: "addCategory('product')"
     },
     expense: {
       list: expenseCategories,
-      key: "serendip_expense_categories",
       input: "newExpenseCategoryName",
-      addFn: "addCategory('expense')",
-      deleteFn: "deleteCategory"
+      addFn: "addCategory('expense')"
     },
     recipe: {
       list: recipeCategories,
-      key: "serendip_recipe_categories",
       input: "newRecipeCategoryName",
-      addFn: "addCategory('recipe')",
-      deleteFn: "deleteCategory"
+      addFn: "addCategory('recipe')"
     }
-  };
-
-  const data = map[type];
+  }[type];
 
   return `
     <div class="panel-form">
-      <input id="${data.input}" placeholder="New category name" />
-      <button class="primary-btn full" onclick="${data.addFn}">Add Category</button>
+      <input id="${config.input}" placeholder="New category name" />
+      <button class="primary-btn full" onclick="${config.addFn}">Add Category</button>
     </div>
 
-    ${data.list.map(category => `
+    ${config.list.map(category => `
       <div class="simple-row">
         <strong>${category}</strong>
         <div class="row-actions">
@@ -933,12 +915,10 @@ function addCategory(type) {
     key = "serendip_recipe_categories";
   }
 
-  const value = document.getElementById(inputId).value.trim();
-
+  const value = byId(inputId).value.trim();
   if (!value) return;
 
   if (!list.includes(value)) list.push(value);
-
   save(key, list);
 
   if (type === "product") productCategories = list;
@@ -976,24 +956,30 @@ function sheetsPanel() {
       <input id="sheetsUrlInput" placeholder="Apps Script URL" value="${sheetsUrl || ""}" />
       <button class="primary-btn full" onclick="saveSheetsUrl()">Save URL</button>
     </div>
-    <p class="empty-text">
-      Google Sheets sync placeholder is ready. App works without sync for testing.
-    </p>
+    <p class="empty-text">Google Sheets sync placeholder is ready. App works without sync for testing.</p>
   `;
 }
 
 function saveSheetsUrl() {
-  sheetsUrl = document.getElementById("sheetsUrlInput").value.trim();
+  sheetsUrl = byId("sheetsUrlInput").value.trim();
   save("serendip_sheets_url", sheetsUrl);
   alert("Google Sheets URL saved");
   closePanel();
+}
+
+/* BADGES */
+
+function renderBadges() {
+  safeSet("productCountBadge", products.length);
+  safeSet("expenseCountBadge", expenses.length);
+  safeSet("recipeCountBadge", recipes.length);
+  safeSet("attendanceCountBadge", attendance.length);
 }
 
 /* RESET */
 
 function factoryReset() {
   if (!confirm("This will delete all POS data. Continue?")) return;
-
   localStorage.clear();
   location.reload();
 }
@@ -1007,14 +993,15 @@ function renderAll() {
   renderOrders();
   renderRevenue();
   renderExpenses();
+  renderBadges();
 }
 
 function init() {
   const staff = getCurrentStaff();
 
   if (staff) {
-    document.getElementById("loginScreen").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
+    byId("loginScreen").classList.add("hidden");
+    byId("app").classList.remove("hidden");
     renderAll();
   }
 }
